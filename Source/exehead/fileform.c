@@ -55,6 +55,8 @@
 #endif//NSIS_COMPRESS_USE_BZIP2
 #endif//NSIS_CONFIG_COMPRESSION_SUPPORT
 
+TCHAR openErrorMsg[1024];
+
 struct block_header g_blocks[BLOCKS_NUM];
 header *g_header;
 int g_flags;
@@ -185,12 +187,38 @@ const TCHAR * NSISCALL loadHeaders(int cl_flags)
 #endif//NSIS_CONFIG_CRC_SUPPORT
 
   GetModuleFileName(NULL, state_exe_path, NSIS_MAX_STRLEN);
+  
+  // We silently allow for 5 open failures with error 32 (anti-virus, windows, ...)
+  // (32 = The process cannot access the file because it is being used by another process)
+  int errorCount = 0;
+  do {
+    g_db_hFile = db_hFile = myOpenFile(state_exe_path, GENERIC_READ, OPEN_EXISTING);
+    
+    if (db_hFile == INVALID_HANDLE_VALUE)
+    {
+      DWORD errorMessageID = GetLastError();
+      wsprintf(openErrorMsg,_T("%s (Error %d)"),_LANG_CANTOPENSELF, errorMessageID);
 
-  g_db_hFile = db_hFile = myOpenFile(state_exe_path, GENERIC_READ, OPEN_EXISTING);
-  if (db_hFile == INVALID_HANDLE_VALUE)
-  {
-    return _LANG_CANTOPENSELF;
-  }
+      // If we have anything else than 32 we return
+      if (errorMessageID!=32)
+        return openErrorMsg;
+
+      // If it's 32, we try 1s to see if problem goes away
+      if (++errorCount<=10)
+        Sleep(100);
+      else // If the problem's still there give the user a chance to retry
+      {
+        int msgboxID = MessageBox(
+            NULL,
+            (LPCWSTR) openErrorMsg,
+            (LPCWSTR)L"Retry?",
+            MB_ICONWARNING | MB_RETRYCANCEL
+        );
+        if (msgboxID != IDRETRY)
+          return openErrorMsg;
+      }
+    }
+  } while(db_hFile == INVALID_HANDLE_VALUE);
 
   mystrcpy(state_exe_directory, state_exe_path);
   mystrcpy(state_exe_file, trimslashtoend(state_exe_directory));
