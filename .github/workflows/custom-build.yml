@@ -43,20 +43,23 @@ jobs:
       - name: Config Errors
         if: ${{ failure() }}
         run: cat config.log
-      # - name: Nightly Build
-      #   run: |
-      #     rm nsis-*.zip
-      #     scons ZLIB_W32=$HOME/zlib SKIPUTILS="NSIS Menu" DOCTYPES=web dist-zip
-      #     echo https://github.com/$Env:GITHUB_REPOSITORY/actions/runs/$Env:GITHUB_RUN_ID > build.log
-      #     ls -Name nsis-*.zip -OutVariable zip
-      #     zip $zip build.log
-      #   if: matrix.nightly == 'nightly' && github.ref == 'refs/heads/master'
-      # - name: Upload Artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: build.zip
-      #     path: nsis-*.zip
-      #   if: matrix.nightly == 'nightly' && github.ref == 'refs/heads/master'
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nsis-custom.zip
+          path: nsis-*.exe
+      - name: ZIP Build
+        run: |
+          rm nsis-*.zip
+          scons ZLIB_W32=$HOME/zlib SKIPUTILS="NSIS Menu" DOCTYPES=web dist-zip
+          echo https://github.com/$Env:GITHUB_REPOSITORY/actions/runs/$Env:GITHUB_RUN_ID > build.log
+          ls -Name nsis-*.zip -OutVariable zip
+          zip $zip build.log
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build.zip
+          path: nsis-*.zip
 
   # nightly:
   #   if: github.ref == 'refs/heads/master'
