@@ -622,7 +622,7 @@ int NSISCALL isheader(firstheader *h); // returns 0 on not header, length_of_dat
 // returns 0 on success
 // on success, m_header will be set to a pointer that should eventually be GlobalFree()'d.
 // (or m_uninstheader)
-const TCHAR * NSISCALL loadHeaders(int cl_flags);
+const TCHAR * NSISCALL loadHeaders(int cl_flags, int* show_err);
 
 int NSISCALL _dodecomp(int offset, HANDLE hFileOut, unsigned char *outbuf, int outbuflen);
 

@@ -55,7 +55,7 @@
 #endif//NSIS_COMPRESS_USE_BZIP2
 #endif//NSIS_CONFIG_COMPRESSION_SUPPORT
 
-TCHAR openErrorMsg[1024];
+TCHAR open_error_msg[1024];
 
 struct block_header g_blocks[BLOCKS_NUM];
 header *g_header;
@@ -159,7 +159,7 @@ void handle_ver_dlg(BOOL kill)
 static z_stream g_inflate_stream;
 #endif
 
-const TCHAR * NSISCALL loadHeaders(int cl_flags)
+const TCHAR * NSISCALL loadHeaders(int cl_flags, int* show_err)
 {
   MAXSIZETYPE left;
 #ifdef NSIS_CONFIG_CRC_SUPPORT
@@ -190,32 +190,35 @@ const TCHAR * NSISCALL loadHeaders(int cl_flags)
   
   // We silently allow for 5 open failures with error 32 (anti-virus, windows, ...)
   // (32 = The process cannot access the file because it is being used by another process)
-  int errorCount = 0;
+  int error_count = 0;
   do {
     g_db_hFile = db_hFile = myOpenFile(state_exe_path, GENERIC_READ, OPEN_EXISTING);
     
     if (db_hFile == INVALID_HANDLE_VALUE)
     {
-      DWORD errorMessageID = GetLastError();
-      wsprintf(openErrorMsg,_T("%s (Error %d)"),_LANG_CANTOPENSELF, errorMessageID);
+      DWORD error_message_id = GetLastError();
+      wsprintf(open_error_msg,_T("%s (Error %d)"),_LANG_CANTOPENSELF, error_message_id);
 
       // If we have anything else than 32 we return
-      if (errorMessageID!=32)
-        return openErrorMsg;
+      if (error_message_id!=32)
+        return open_error_msg;
 
       // If it's 32, we try 1s to see if problem goes away
-      if (++errorCount<=10)
+      if (++error_count<=10)
         Sleep(100);
       else // If the problem's still there give the user a chance to retry
       {
-        int msgboxID = MessageBox(
+        int msg_box_id = MessageBox(
             NULL,
-            (LPCWSTR) openErrorMsg,
-            (LPCWSTR)L"Retry?",
+            (LPCWSTR) open_error_msg,
+            (LPCWSTR) _T("Retry?"),
             MB_ICONWARNING | MB_RETRYCANCEL
         );
-        if (msgboxID != IDRETRY)
-          return openErrorMsg;
+        if (msg_box_id != IDRETRY)
+        {
+          *show_err = 0;
+          return open_error_msg;
+        }
       }
     }
   } while(db_hFile == INVALID_HANDLE_VALUE);

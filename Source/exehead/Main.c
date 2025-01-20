@@ -90,6 +90,7 @@ EXTERN_C void NSISWinMainNOCRT()
 {
   int ret = 0;
   const TCHAR *m_Err = _LANG_ERRORWRITINGTEMP;
+  int show_err = 1;
   int cl_flags = 0;
 
   TCHAR *realcmds;
@@ -317,7 +318,7 @@ EXTERN_C void NSISWinMainNOCRT()
   }
   DeleteFile(state_language);
 
-  m_Err = loadHeaders(cl_flags);
+  m_Err = loadHeaders(cl_flags, &show_err);
   if (m_Err) goto end;
 
 #ifdef NSIS_CONFIG_UNINSTALL_SUPPORT
@@ -434,7 +435,8 @@ end:
 
   if (m_Err)
   {
-    my_MessageBox(m_Err, MB_OK | MB_ICONSTOP | (IDOK << 21));
+    if (show_err)
+      my_MessageBox(m_Err, MB_OK | MB_ICONSTOP | (IDOK << 21));
     ExitProcess(2);
   }
 
